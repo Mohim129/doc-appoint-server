@@ -105,7 +105,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     const db = client.db("docappoint");
     const doctorsCollection = db.collection("doctors");
     const appointmentsCollection = db.collection("appointments");
@@ -174,33 +174,7 @@ async function run() {
     });
 
 
-
-    app.get("/users", async (req, res) => {
-      const query = req.query;
-      const users = await usersCollection.find(query).toArray();
-      res.json(users);
-    });
-
-    app.post("/users", async (req, res) => {
-      const user = req.body;
-      const result = await usersCollection.insertOne(user);
-      res.json(result);
-    });
-
-    app.put("/users/:id", async (req, res) => {
-      const id = req.params.id;
-      const user = req.body;
-      const result = await usersCollection.updateOne(
-        { _id: new ObjectId(id) },
-        { $set: user }
-      );
-      res.json(result);
-    });
-
-
-
-
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Connected to MongoDB!");
 
     app.listen(PORT, () => {

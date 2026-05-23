@@ -110,7 +110,7 @@ async function run() {
     const appointmentsCollection = db.collection("appointments");
 
     app.get("/", (req, res) => {
-      res.send("Doc Appoint Server is Running!");
+      res.send(`Doc Appoint Server is Running! Link: "https://doc-appoint-server-blond.vercel.app"`);
     });
 
     app.get("/doctors", async (req, res) => {

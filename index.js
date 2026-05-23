@@ -10,19 +10,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ----------- Middleware -----------
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: process.env.CLIENT_URL,
   credentials: true,
 }));
 app.use(express.json());
 app.use(cookieParser());
 
-// ----------- JWT Verification -----------
 const verifyToken = async (req, res, next) => {
   let token = null;
 
-  // 1. Try Authorization header (from server components / fetch calls)
   const authHeader = req.headers.authorization;
   console.log('Incoming Authorization Header:', authHeader);
 
@@ -30,7 +27,6 @@ const verifyToken = async (req, res, next) => {
     token = authHeader.split(' ')[1];
   }
 
-  // 2. Try Better Auth session cookies
   console.log('Incoming Cookies:', req.cookies);
   if (!token) {
     token =
@@ -45,33 +41,28 @@ const verifyToken = async (req, res, next) => {
     return res.status(401).json({ message: 'Unauthorized: Missing session token' });
   }
 
-  // 3. Try verifying the token as a JWT
   try {
     const decoded = jwt.verify(token, process.env.BETTER_AUTH_SECRET);
     console.log('JWT Verification Succeeded:', decoded);
-    // Better Auth JWT payload holds the user info in the 'user' field
     req.user = decoded.user || decoded;
     return next();
   } catch (error) {
     console.log('JWT Verification Failed, error:', error.message);
     console.log('Falling back to database session lookup...');
 
-    // 4. Fallback: If it's not a valid JWT (like an opaque session token), query MongoDB
+
     try {
       const db = client.db("docappoint");
-      // Check both "session" (singular) and "sessions" (plural)
       const session = await db.collection("session").findOne({ token }) ||
         await db.collection("sessions").findOne({ token });
 
       console.log('Database Session lookup result:', session);
 
       if (session) {
-        // Verify session is not expired
         const isExpired = new Date(session.expiresAt) <= new Date();
         console.log('Is Database Session Expired?', isExpired);
 
         if (!isExpired) {
-          // Check both "user" (singular) and "users" (plural)
           const user = await db.collection("user").findOne({
             $or: [
               { id: session.userId },
@@ -103,7 +94,6 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
-// ----------- Database -----------
 const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri, {
   serverApi: {
@@ -121,7 +111,6 @@ async function run() {
     const appointmentsCollection = db.collection("appointments");
     const usersCollection = db.collection("users");
 
-    // ------------------ DOCTORS (public) ------------------
     app.get("/doctors", async (req, res) => {
       const doctors = await doctorsCollection.find({}).toArray();
       res.json(doctors);
@@ -145,7 +134,7 @@ async function run() {
       }
     });
 
-    // ------------------ APPOINTMENTS (protected) ------------------
+
     app.get("/appointments", verifyToken, async (req, res) => {
       const userEmail = req.user.email;
       const appointments = await appointmentsCollection.find({ userEmail }).toArray();
@@ -184,7 +173,8 @@ async function run() {
       res.json(result);
     });
 
-    // ------------------ USERS ------------------
+
+
     app.get("/users", async (req, res) => {
       const query = req.query;
       const users = await usersCollection.find(query).toArray();
@@ -207,7 +197,9 @@ async function run() {
       res.json(result);
     });
 
-    // Ping
+
+
+
     await client.db("admin").command({ ping: 1 });
     console.log("Connected to MongoDB!");
 

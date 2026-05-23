@@ -105,11 +105,13 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // await client.connect();
     const db = client.db("docappoint");
     const doctorsCollection = db.collection("doctors");
     const appointmentsCollection = db.collection("appointments");
-    const usersCollection = db.collection("users");
+
+    app.get("/", (req, res) => {
+      res.send("Doc Appoint Server is Running!");
+    });
 
     app.get("/doctors", async (req, res) => {
       const doctors = await doctorsCollection.find({}).toArray();
